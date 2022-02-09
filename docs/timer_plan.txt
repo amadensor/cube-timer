@@ -1,0 +1,26 @@
+3 button switches 2 digital
+4 status LEDs 4 digital
+1 Analog input (photocell) (inspection sensor) 1 analog
+beeper 1 digital
+I2C (clock, display) sda/sdc
+
+
+Digital: 7
+Analog: 1
+I2C: 2
+
+States:
+1: Ready
+2: Inspection
+3: Hands Down
+4: Solving
+5: Complete
+
+Transition rules:
+
+
+Actions per state:
+
+Actions on transition:
+
+
