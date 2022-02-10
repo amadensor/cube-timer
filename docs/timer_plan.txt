@@ -9,6 +9,12 @@ Digital: 7
 Analog: 1
 I2C: 2
 
+Lights:
+Ready: Blue
+Inspect: Yellow
+Solve: Green
+Done: Red
+
 States:
 1: Ready
 2: Inspection
@@ -17,10 +23,27 @@ States:
 5: Complete
 
 Transition rules:
-
+From...
+1: Light sensed
+2: Botton pressed
+3: Button released
+4: Botton pressed
+5: No light sensed, Reset button pressed 
 
 Actions per state:
 
 Actions on transition:
-
+1:  Light ready light
+2:  Set start inspect time
+    Light inspect light
+    loop: 
+        Update display with inspect time elapsed
+        If time is in ranges for alert beeps, beep
+3:  delay (debouce)
+4:  Store inspection final time elapsed (solve start time)
+    Light solve light
+    Loop:
+        Update display with elapsed solve time
+5:  Light done light
+    Write inspection time elapsed, solve time elapsed, penalties
 
