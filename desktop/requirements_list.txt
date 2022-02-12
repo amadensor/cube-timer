@@ -1,1 +1,1 @@
-simpleGUI
+PySimpleGUI
