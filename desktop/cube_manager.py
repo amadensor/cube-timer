@@ -60,13 +60,13 @@ clock_set=[
     sg.Text("hour"),sg.Input(key='hour',size=4),
     sg.Text("minute"),sg.Input(key='minute',size=4),
     sg.Text("second"),sg.Input(key='second',size=4),
-    sg.Button("set clock")
+    sg.Button("set clock",key='clock')
 ]
 
 actions=[
-    sg.Button("get scores"),
-    sg.Button("read SD"),
-    sg.Button("exit")
+    sg.Button("Get scores",key='scores'),
+    sg.Button("Read scores from SD", key='sd'),
+    sg.Button("Exit",key='exit')
 ]
 
 layout=[
@@ -78,11 +78,35 @@ layout=[
     actions
 ]
 
-window=sg.Window("Cube Stuff",layout)
-while True:
-    event,values=window.read()
-    print(event,values)
-    if (event==sg.WIN_CLOSED or event=="exit"):
-        break
+def main():
+    """main loop"""
+    window=sg.Window("Cube Stuff",layout)
+    while True:
+        print("pre-read")
+        event,values=window.read() #blocking call
+        print("post-read")
+        print(event,values)
+        switch={
+            'sd':read_sd,
+            sg.WIN_CLOSED:None,
+        }
+        if event in (sg.WIN_CLOSED,'exit'):
+            break
+        if event:
+            print(event,type(event))
+            if switch.get(event):
+                switch[event]()
+            else:
+                raise Exception("Undefined event")
+        else:
+            print("no event")
+            break
 
-window.close()
+
+    window.close()
+
+def read_sd():
+    """Read scores from SD card"""
+    print("read sd")
+
+main()
