@@ -1,5 +1,20 @@
 """Cube manager"""
 import PySimpleGUI as sg
+import serial
+import serial.tools.list_ports
+#port_list=[]
+ser=serial.Serial()
+
+def get_ports():
+    """Get the list of serial ports, include a blank if none"""
+    print('get ports')
+    port_ret=[]
+    ports=serial.tools.list_ports.comports()
+    for port in ports:
+        port_ret.append(port.device)
+    if len(port_ret)==0:
+        port_ret.append("")
+    return port_ret
 
 normal_titles=[
     [sg.Text("normal")],
@@ -76,6 +91,8 @@ clock_set=[
 actions=[
     sg.Button("Get scores",key='scores'),
     sg.Button("Read scores from SD", key='sd_button'),
+    sg.Button("Port", key='refresh_port'),
+    sg.Combo([],key="port_select",enable_events=True,s=16),
     sg.Button("Exit",key='exit')
 ]
 
@@ -87,10 +104,12 @@ layout=[
     clock_set,
     actions
 ]
+window=sg.Window("Cube Stuff",layout)
 
 def main():
     """main loop"""
-    window=sg.Window("Cube Stuff",layout)
+    window.finalize()
+    refresh_port('x')
     while True:
         print("pre-read")
         event,values=window.read() #blocking call
@@ -104,6 +123,8 @@ def main():
             'clock_button':set_clock,
             'scores':read_scores,
             'sd_button':read_sd,
+            'port_select':set_port,
+            'refresh_port':refresh_port,
             sg.WIN_CLOSED:None,
         }
         if event in (sg.WIN_CLOSED,'exit'):
@@ -134,7 +155,7 @@ def setup_normal(values):
     cmd['alert1']=values['normal_1']
     cmd['alert2']=values['normal_2']
     cmd['dnf']=values['normal_dnf']
-    send_command(cmd)
+    send_command(values['port_select'],cmd)
 
 def set_blind(values):
     """Setup Blind"""
@@ -144,20 +165,20 @@ def set_blind(values):
     cmd['alert1']=values['blind_1']
     cmd['alert2']=values['blind_2']
     cmd['dnf']=values['blind_dnf']
-    send_command(cmd)
+    send_command(values['port_select'],cmd)
 
 def set_countup(values):
     """Setup count up timer"""
     del values
     cmd={'mode':'cu'}
-    send_command(cmd)
+    send_command(values['port_select'],cmd)
 
 def set_countdown(values):
     """Setup countdown"""
     cmd={}
     cmd['mode']='cd'
     cmd['cd']=values['countdown']
-    send_command(cmd)
+    send_command(values['port_select'],cmd)
 
 
 def set_clock(values):
@@ -169,17 +190,36 @@ def set_clock(values):
     cmd['hour']=values['hour']
     cmd['minute']=values['minute']
     cmd['second']=values['second']
-    send_command(cmd)
+    send_command(values['port_select'],cmd)
 
 def read_scores(values):
     """"Read scores via serial"""
     del values
     cmd={'mode':'rs'}
-    send_command(cmd)
+    send_command(values['port_select'],cmd)
 
-def send_command(cmds):
+def send_command(port,cmds):
     """Send command across serial"""
-    for cmd in cmds:
-        print(cmd,":",cmds[cmd])
+    ser.port=port
+    ser.timeout=1
+    ser.open()
+    #ser=serial.Serial(,timeout=1)
 
+    for cmd in cmds:
+        print("#",cmd)
+        serline=str(cmd+":"+cmds[cmd])
+        ser.write(serline.encode('UTF-8'))
+    print(ser.readlines())
+    ser.close()
+
+def refresh_port(values):
+    """Refresh port selector"""
+    del values
+    port_list=get_ports()
+    window['port_select'].update(values=port_list,value=port_list[0])
+
+
+def set_port(values):
+    """Set the port when it is changed in the selector"""
+    ser.port=values['port_select']
 main()
