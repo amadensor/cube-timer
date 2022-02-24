@@ -209,8 +209,10 @@ def send_command(port,cmds):
         print("#",cmd)
         serline=str(cmd+":"+cmds[cmd])
         ser.write(serline.encode('UTF-8'))
-    print(ser.readlines())
+    ret_data=ser.readlines()
+    print(ret_data)
     ser.close()
+    return ret_data
 
 def refresh_port(values):
     """Refresh port selector"""
