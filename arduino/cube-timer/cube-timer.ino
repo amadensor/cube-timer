@@ -95,14 +95,21 @@ void processCommands(){
   if (cmd=="inspect") inspectLimit=val.toInt()*1000.0;
   if (cmd=="rs")
   {
-    Serial.print("Inspection Limit:");
-    Serial.println(inspectLimit);
-    Serial.print("Inspect Time:");
-    Serial.println(solveStart-inspectStart);
-    Serial.print("Solve Time:");
-    Serial.println(solveFinish-solveStart);
+    send_scores();
   }
   if (cmd=="clock") setClock(val);
+}
+
+void send_scores(){
+  String scoreJSON;
+  scoreJSON.concat("{\"Inspection Limit\":");
+  scoreJSON.concat(inspectLimit);
+  scoreJSON.concat(",\"Inspect Time\":");
+  scoreJSON.concat(solveStart-inspectStart);
+  scoreJSON.concat(",\"Solve Time\":");
+  scoreJSON.concat(solveFinish-solveStart);
+  scoreJSON.concat("}");
+  Serial.println(scoreJSON);
 }
 
 String readSerial(){

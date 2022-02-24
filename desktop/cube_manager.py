@@ -1,5 +1,6 @@
 """Cube manager"""
 import time
+import json
 import PySimpleGUI as sg
 import serial
 import serial.tools.list_ports
@@ -18,18 +19,14 @@ def get_ports():
     return port_ret
 
 normal_titles=[
-    [sg.Text("normal")],
     [sg.Text("inspection time")],
     [sg.Text("alert 1")],
     [sg.Text("alert 2")],
-    [sg.Text("alert 3 (DNF)")],
 ]
 normal_inputs=[
-    [sg.Text()],
-    [sg.Input(key='normal_inspect',size=4)],
-    [sg.Input(key='normal_1',size=4)],
-    [sg.Input(key='normal_2',size=4)],
-    [sg.Input(key='normal_dnf',size=4)]
+    [sg.Input(key='normal_inspect',size=4,default_text="15")],
+    [sg.Input(key='normal_1',size=4,default_text="8")],
+    [sg.Input(key='normal_2',size=4,default_text="12")],
 ]
 normal_col=[
     [
@@ -37,24 +34,20 @@ normal_col=[
         sg.Column(normal_inputs)
     ],
     [
-        sg.Button("Setup Normal",key="norm_button")
+        sg.Button("Apply",key="norm_button")
     ]
 
 ]
 
 blindfolded_titles=[
-    [sg.Text("Blind")],
     [sg.Text("inspection time - 0")],
     [sg.Text("alert 1")],
-    [sg.Text("alert 2")],
-    [sg.Text("alert 3 (DNF)")]
+    [sg.Text("alert 2")]
 ]
 blindfold_inputs=[
-    [sg.Text()],
-    [sg.Input(key='blind_inspect',size=4)],
-    [sg.Input(key='blind_1',size=4)],
-    [sg.Input(key='blind_2',size=4)],
-    [sg.Input(key='blind_dnf',size=4)]
+    [sg.Input(key='blind_inspect',size=4,default_text="0")],
+    [sg.Input(key='blind_1',size=4,default_text="0")],
+    [sg.Input(key='blind_2',size=4,default_text="0")],
 ]
 blindfolded_col=[
     [
@@ -62,31 +55,30 @@ blindfolded_col=[
         sg.Column(blindfold_inputs)
     ],
     [
-        sg.Button("Setup Blindfolded",key="bf_button")
+        sg.Button("Apply",key="bf_button")
     ]
 ]
 
 count_up_col=[
-    [sg.Text("countup"),sg.Input(key='countup',size=4)],
+    [sg.Text("Start From"),sg.Input(key='countup',size=4)],
     [
-        sg.Button("Setup Count Up",key="cu_button")
+        sg.Button("Apply",key="cu_button")
     ]
 ]
 
 countdown_col=[
-    [sg.Text("countdown")],
     [sg.Text("Start time"),sg.Input(key='countdown',size=4)],
-    [sg.Button("Setup Countdown",key="cd_button")]
+    [sg.Button("Apply",key="cd_button")]
 ]
 
-clock_set=[
+clock_set=[[
     sg.Text("year"),sg.Input(key='year',size=4),
     sg.Text("month"),sg.Input(key='month',size=4),
     sg.Text("day"),sg.Input(key='day',size=4),
     sg.Text("hour"),sg.Input(key='hour',size=4),
     sg.Text("minute"),sg.Input(key='minute',size=4),
     sg.Text("second"),sg.Input(key='second',size=4),
-    sg.Button("Set Clock",key='clock_button')
+    sg.Button("Set",key='clock_button')]
 ]
 
 actions=[
@@ -98,11 +90,11 @@ actions=[
 ]
 
 layout=[
-    [sg.Column(normal_col,background_color="blue"),
-    sg.Column(blindfolded_col,background_color="red"),
-    sg.Column(count_up_col,background_color="green"),
-    sg.Column(countdown_col,background_color="white")],
-    clock_set,
+    [sg.Frame("Setup Normal",normal_col),
+    sg.Frame("Setup Blindfolded",blindfolded_col),
+    sg.Frame("Setup Count Up",count_up_col),
+    sg.Frame("Setup Countdown",countdown_col)],
+    [sg.Frame("Clock",clock_set)],
     actions
 ]
 window=sg.Window("Cube Stuff",layout)
@@ -110,7 +102,7 @@ window=sg.Window("Cube Stuff",layout)
 def main():
     """main loop"""
     window.finalize()
-    port=refresh_port('x')
+    port=refresh_port({'x':'x'})
     set_port({'port_select':port})
     while True:
         print("pre-read")
@@ -158,8 +150,7 @@ def setup_normal(values):
     cmd['inspect']=values['normal_inspect']
     cmd['alert1']=values['normal_1']
     cmd['alert2']=values['normal_2']
-    cmd['dnf']=values['normal_dnf']
-    send_command(values['port_select'],cmd)
+    send_command(cmd)
 
 def set_blind(values):
     """Setup Blind"""
@@ -168,21 +159,20 @@ def set_blind(values):
     cmd['inspect']=values['blind_inspect']
     cmd['alert1']=values['blind_1']
     cmd['alert2']=values['blind_2']
-    cmd['dnf']=values['blind_dnf']
-    send_command(values['port_select'],cmd)
+    send_command(cmd)
 
 def set_countup(values):
     """Setup count up timer"""
     del values
     cmd={'mode':'cu'}
-    send_command(values['port_select'],cmd)
+    send_command(cmd)
 
 def set_countdown(values):
     """Setup countdown"""
     cmd={}
     cmd['mode']='cd'
     cmd['cd']=values['countdown']
-    send_command(values['port_select'],cmd)
+    send_command(cmd)
 
 
 def set_clock(values):
@@ -197,17 +187,20 @@ def set_clock(values):
         values['minute']+
         values['second']
     )
-    send_command(values['port_select'],cmd)
+    send_command(cmd)
 
 def read_scores(values):
     """"Read scores via serial"""
+    del values
     cmd={'rs':''}
-    send_command(values['port_select'],cmd)
+    score_bytes=send_command(cmd)
+    score_str=score_bytes[0].decode()
+    score_dict=json.loads(score_str)
+    print(json.dumps(score_dict,indent=4))
+    return score_dict
 
-def send_command(port,cmds):
+def send_command(cmds):
     """Send command across serial"""
-    #ser=serial.Serial(,timeout=1)
-
     for cmd in cmds:
         print("#",cmd)
         serline=str(cmd+":"+cmds[cmd])
@@ -219,17 +212,19 @@ def send_command(port,cmds):
 
 def refresh_port(values):
     """Refresh port selector"""
-    del values
     port_list=get_ports()
     window['port_select'].update(values=port_list,value=port_list[0])
+    if not values.get('port_select'):
+        set_port({"port_select":port_list[0]})
     return port_list[0]
 
 
 def set_port(values):
     """Set the port when it is changed in the selector"""
-    ser.close()
-    ser.port=values['port_select']
-    ser.timeout=1
-    ser.open()
+    if values['port_select']:
+        ser.close()
+        ser.port=values['port_select']
+        ser.timeout=1
+        ser.open()
 
 main()
