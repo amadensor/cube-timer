@@ -8,6 +8,7 @@ int solveButton=7,resetButton=8;
 int beeper=9; //beeper on PWW
 int coverDetect=1;
 int coverThreshold=300;
+unsigned long inspectLimit=15000;
 unsigned long inspectStart,solveStart,solveFinish;
 unsigned long beepTimer, alertOne=8000, alertTwo=12000;
 String modes[5]={"Ready","Inspection","Hands Down","Solving","Complete"};
@@ -32,6 +33,25 @@ void displaySolveTime(){
   lcdDisplay.print(solveTime);
 }
 
+void displayCurrentTime(){
+  String timeStamp="";
+  now=rtc.now();
+  timeStamp.concat(now.hour());
+  timeStamp.concat(":");
+  timeStamp.concat(now.minute());
+  timeStamp.concat(":");
+  timeStamp.concat(now.second());
+  timeStamp.concat(" ");
+  timeStamp.concat(now.month());
+  timeStamp.concat("/");
+  timeStamp.concat(now.day());
+  timeStamp.concat("/");
+  timeStamp.concat(now.year());
+ 
+  lcdDisplay.setCursor(0,1);
+  lcdDisplay.print(timeStamp);
+}
+
 void saveResults(){
   //write SD
   //Write serial
@@ -53,6 +73,37 @@ void allOff(){
   digitalWrite(solveLED,LOW);
   digitalWrite(doneLED,LOW);
 }
+void processCommands(){
+  String inString,cmd,val;
+  inString=readSerial();
+
+  for (int t=0;t<inString.length();t++)
+  {
+    if (inString.charAt(t)==':'){
+      cmd=inString.substring(0,t);
+      cmd.trim();
+      t++;
+      val=inString.substring(t,inString.length());
+      val.trim();
+    }
+  }
+
+  //Serial.println(cmd);
+  //Serial.println(val);
+  if (cmd=="alert1") alertOne=val.toInt()*1000.0;
+  if (cmd=="alert2") alertTwo=val.toInt()*1000.0;
+  if (cmd=="inspect") inspectLimit=val.toInt()*1000.0;
+  if (cmd=="rs")
+  {
+    Serial.print("Inspection Limit:");
+    Serial.println(inspectLimit);
+    Serial.print("Inspect Time:");
+    Serial.println(solveStart-inspectStart);
+    Serial.print("Solve Time:");
+    Serial.println(solveFinish-solveStart);
+  }
+  if (cmd=="clock") setClock(val);
+}
 
 String readSerial(){
   int inChar;
@@ -65,10 +116,8 @@ String readSerial(){
   return retString;
 }
 
-void setClock(){
-  String inString;
-  Serial.println("Set Clock");
-  inString=readSerial();
+void setClock(String inString){
+  //Serial.println("Set Clock");
   if (inString.substring(0,1)==String('C')){
     dateYear=inString.substring(1,5).toInt();
     dateMonth=inString.substring(5,7).toInt();
@@ -78,7 +127,13 @@ void setClock(){
     timeSecond=inString.substring(13,15).toInt();
     now=DateTime(dateYear,dateMonth, dateDay, timeHour, timeMinute, timeSecond);
     rtc.adjust(now);
-    Serial.println("Clock set");
+    //Serial.println("Clock set");
+    Serial.println(now.hour());
+    Serial.println(now.minute());
+    Serial.println(now.second());
+    Serial.println(now.year());
+    Serial.println(now.month());
+    Serial.println(now.day());
   }
 }
 
@@ -94,20 +149,20 @@ void setup() {
   Serial.begin(9600);
   if (!rtc.begin())
   {
-    Serial.println("No RTC");
-    Serial.flush();
+    //Serial.println("No RTC");
+    //Serial.flush();
     rtc.adjust(DateTime(__DATE__, __TIME__));
   }
   now=rtc.now();
   if (now.year()==2000){
     rtc.adjust(DateTime(__DATE__, __TIME__));
   }
-  Serial.println(now.hour());
-  Serial.println(now.minute());
-  Serial.println(now.second());
-  Serial.println(now.year());
-  Serial.println(now.month());
-  Serial.println(now.day());
+  //Serial.println(now.hour());
+  //Serial.println(now.minute());
+  //Serial.println(now.second());
+  //Serial.println(now.year());
+  //Serial.println(now.month());
+  //Serial.println(now.day());
   pinMode(readyLED,OUTPUT);
   pinMode(inspectLED,OUTPUT);
   pinMode(solveLED,OUTPUT);
@@ -117,22 +172,27 @@ void setup() {
   pinMode(beeper,OUTPUT);
 }
 void loop() {
-  // put your main code here, to run repeatedly:
-  //Serial.println(analogRead(coverDetect));
-  //delay(1000);
+  if (Serial.available()) processCommands();
   if (mode==0 and analogRead(coverDetect)>coverThreshold){
     mode++;
+    if (inspectLimit==0)
+    {
+      mode++;
+    }
+    else
+    {
+      lcdDisplay.clear();
+      lcdDisplay.setCursor(0,2);
+      lcdDisplay.print(modes[mode]);
+    }
     inspectStart=millis();
-    lcdDisplay.clear();
-    Serial.print(mode);
-    Serial.println(modes[mode]);
   }
   if (mode==1 and digitalRead(solveButton)==HIGH){
     mode++;
     delay(10);
     lcdDisplay.clear();
-    Serial.print(mode);
-    Serial.println(modes[mode]);
+    lcdDisplay.setCursor(0,2);
+    lcdDisplay.print(modes[mode]);
   }
   if (mode==2 and digitalRead(solveButton)==LOW){
     mode++;
@@ -140,47 +200,45 @@ void loop() {
     allOff();
     lcdDisplay.clear();
     digitalWrite(solveLED,HIGH);
-    Serial.print(mode);
-    Serial.println(modes[mode]);
+    lcdDisplay.setCursor(0,2);
+    lcdDisplay.print(modes[mode]);
   }
   if (mode==3 and digitalRead(solveButton)==HIGH){
     mode++;
     solveFinish=millis();
     allOff();
     digitalWrite(doneLED,HIGH);
-    Serial.print(mode);
-    Serial.println(modes[mode]);
+    lcdDisplay.setCursor(0,2);
+    lcdDisplay.print(modes[mode]);
     saveResults();    
   }
   if (mode==4 and analogRead(coverDetect)<coverThreshold and digitalRead(resetButton)==HIGH){
     mode=0;
     allOff();
     digitalWrite(readyLED,HIGH);
-    Serial.print(mode);
-    Serial.println(modes[mode]);
+    lcdDisplay.setCursor(0,2);
+    lcdDisplay.print(modes[mode]);
     lcdDisplay.clear();
     lcdDisplay.setCursor(0,0);
     lcdDisplay.print("Ready");
   }
-  if (mode==1){
+  if (mode==1 or mode==2){
     displayInspectTime();
     beepTimer=millis()- inspectStart;
-    if ((alertOne < beepTimer) && (beepTimer < alertOne + 200)){
+    if ((alertOne < beepTimer) && (beepTimer < alertOne + 200)
+     || (alertTwo < beepTimer) && (beepTimer < alertTwo + 200)){
       digitalWrite(beeper,HIGH);
-      Serial.print("beep");
-      Serial.print(alertOne);
-      Serial.print(":");
-      Serial.print(beepTimer);
-      Serial.print(":");
-      Serial.println(alertOne + 200);
     }
     else {
       digitalWrite(beeper,LOW);
-      //Serial.println("no beep");
     }
   }
   if (mode==3){
     displaySolveTime();
   }
+  if (mode==0){
+    displayCurrentTime();
+  }
+  
 
 }

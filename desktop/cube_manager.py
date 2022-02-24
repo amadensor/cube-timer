@@ -1,4 +1,5 @@
 """Cube manager"""
+import time
 import PySimpleGUI as sg
 import serial
 import serial.tools.list_ports
@@ -109,7 +110,8 @@ window=sg.Window("Cube Stuff",layout)
 def main():
     """main loop"""
     window.finalize()
-    refresh_port('x')
+    port=refresh_port('x')
+    set_port({'port_select':port})
     while True:
         print("pre-read")
         event,values=window.read() #blocking call
@@ -141,6 +143,8 @@ def main():
 
 
     window.close()
+    ser.close()
+
 
 def read_sd(values):
     """Read scores from SD card"""
@@ -151,7 +155,7 @@ def setup_normal(values):
     print("Normal")
     cmd={}
     cmd['mode']='normal'
-    cmd['inspct']=values['normal_inspect']
+    cmd['inspect']=values['normal_inspect']
     cmd['alert1']=values['normal_1']
     cmd['alert2']=values['normal_2']
     cmd['dnf']=values['normal_dnf']
@@ -184,34 +188,33 @@ def set_countdown(values):
 def set_clock(values):
     """"Set real time clock"""
     cmd={}
-    cmd['year']=values['year']
-    cmd['month']=values['month']
-    cmd['day']=values['day']
-    cmd['hour']=values['hour']
-    cmd['minute']=values['minute']
-    cmd['second']=values['second']
+    cmd['clock']=(
+        "C"+
+        values['year']+
+        values['month']+
+        values['day']+
+        values['hour']+
+        values['minute']+
+        values['second']
+    )
     send_command(values['port_select'],cmd)
 
 def read_scores(values):
     """"Read scores via serial"""
-    del values
-    cmd={'mode':'rs'}
+    cmd={'rs':''}
     send_command(values['port_select'],cmd)
 
 def send_command(port,cmds):
     """Send command across serial"""
-    ser.port=port
-    ser.timeout=1
-    ser.open()
     #ser=serial.Serial(,timeout=1)
 
     for cmd in cmds:
         print("#",cmd)
         serline=str(cmd+":"+cmds[cmd])
         ser.write(serline.encode('UTF-8'))
+        time.sleep(1)
     ret_data=ser.readlines()
     print(ret_data)
-    ser.close()
     return ret_data
 
 def refresh_port(values):
@@ -219,9 +222,14 @@ def refresh_port(values):
     del values
     port_list=get_ports()
     window['port_select'].update(values=port_list,value=port_list[0])
+    return port_list[0]
 
 
 def set_port(values):
     """Set the port when it is changed in the selector"""
+    ser.close()
     ser.port=values['port_select']
+    ser.timeout=1
+    ser.open()
+
 main()
