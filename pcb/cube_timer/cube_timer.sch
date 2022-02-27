@@ -541,8 +541,6 @@ Wire Wire Line
 Wire Wire Line
 	11900 800  2050 800 
 Wire Wire Line
-	2050 800  2050 1850
-Wire Wire Line
 	2050 1850 2000 1850
 Wire Wire Line
 	10200 2300 11900 2300
@@ -613,8 +611,6 @@ Wire Wire Line
 Connection ~ 10500 2400
 Wire Wire Line
 	10500 2400 10550 2400
-Wire Wire Line
-	2250 950  2250 2350
 Wire Wire Line
 	2250 2350 1850 2350
 $Comp
@@ -716,4 +712,34 @@ Wire Wire Line
 Connection ~ 4850 7000
 Wire Wire Line
 	4850 7000 4650 7000
+$Comp
+L Device:R R?
+U 1 1 621C430D
+P 2250 1900
+F 0 "R?" H 2320 1946 50  0000 L CNN
+F 1 "R" H 2320 1855 50  0000 L CNN
+F 2 "" V 2180 1900 50  0001 C CNN
+F 3 "~" H 2250 1900 50  0001 C CNN
+	1    2250 1900
+	1    0    0    -1  
+$EndComp
+$Comp
+L Device:R R?
+U 1 1 621C3C2A
+P 2050 1400
+F 0 "R?" H 2120 1446 50  0000 L CNN
+F 1 "R" H 2120 1355 50  0000 L CNN
+F 2 "" V 1980 1400 50  0001 C CNN
+F 3 "~" H 2050 1400 50  0001 C CNN
+	1    2050 1400
+	1    0    0    -1  
+$EndComp
+Wire Wire Line
+	2250 950  2250 1750
+Wire Wire Line
+	2250 2050 2250 2350
+Wire Wire Line
+	2050 800  2050 1250
+Wire Wire Line
+	2050 1550 2050 1850
 $EndSCHEMATC
