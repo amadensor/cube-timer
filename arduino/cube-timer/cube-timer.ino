@@ -1,3 +1,5 @@
+#include <SPI.h>
+#include <SD.h>
 #include <LCD_I2C.h>
 //#include <Wire.h>
 #include <RTClib.h>
@@ -8,6 +10,7 @@ int solveButton=7,resetButton=8;
 int beeper=9; //beeper on PWW
 int coverDetect=1;
 int coverThreshold=300;
+int validSD=0;
 unsigned long inspectLimit=15000;
 unsigned long inspectStart,solveStart,solveFinish;
 unsigned long beepTimer, alertOne=8000, alertTwo=12000;
@@ -56,6 +59,8 @@ void saveResults(){
   //write SD
   //Write serial
   float inspectTime, solveTime;
+  String fileData,filePath;
+  File scoreFile;
   inspectTime=(solveStart-inspectStart)/1000.0;
   solveTime=(solveFinish-solveStart)/1000.0;
   lcdDisplay.clear();
@@ -65,6 +70,39 @@ void saveResults(){
   lcdDisplay.setCursor(0,1);
   lcdDisplay.print("Solve: ");
   lcdDisplay.print(solveTime);
+  if (validSD==1)
+  {
+    filePath="";
+    filePath.concat(now.year());
+    filePath.concat("/");
+    filePath.concat(now.month());
+    filePath.concat("/");
+    filePath.concat(now.day());
+    filePath.concat("/");
+    filePath.concat(now.hour());
+    filePath.concat("/");
+    filePath.concat(now.minute());
+    filePath.concat("/");
+    filePath.concat(now.second());
+    filePath.concat("/");
+    SD.mkdir(filePath);
+    filePath.concat("scores.csv");
+    scoreFile=SD.open(filePath,FILE_WRITE);
+    fileData="Inspect Time, Solve Time, Inspect Start, Solve Start, Solve Finish";
+    scoreFile.println(fileData);
+    fileData="";
+    fileData.concat(inspectTime);
+    fileData.concat(",");
+    fileData.concat(solveTime);
+    fileData.concat(",");
+    fileData.concat(inspectStart);
+    fileData.concat(",");
+    fileData.concat(solveStart);
+    fileData.concat(",");
+    fileData.concat(solveFinish);
+    scoreFile.println(fileData);
+    scoreFile.close();
+  }
 }
 
 void allOff(){
@@ -145,6 +183,9 @@ void setClock(String inString){
 }
 
 void setup() {
+  String fileData;
+  File verFile;
+
 #ifdef AVR
   //Wire.begin();
 #else
@@ -152,7 +193,6 @@ void setup() {
 #endif
   lcdDisplay.begin();
   lcdDisplay.backlight();
-  rtc.begin();
   Serial.begin(9600);
   if (!rtc.begin())
   {
@@ -164,6 +204,26 @@ void setup() {
   if (now.year()==2000){
     rtc.adjust(DateTime(__DATE__, __TIME__));
   }
+  SD.begin();
+  verFile=SD.open("VERIFY.TXT");
+  fileData="";
+  while (verFile.available())
+  {
+    inChar=verFile.read();
+    fileData.concat(char(inChar));
+  }
+  if(fileData == "cubetimer\n")
+  {
+    lcdDisplay.setCursor(0,0);
+    lcdDisplay.print("SD Card OK");
+    validSD=1;
+  }
+  else
+  {
+    lcdDisplay.setCursor(0,0);
+    lcdDisplay.print("No valid SD");
+  }
+  verFile.close();
   //Serial.println(now.hour());
   //Serial.println(now.minute());
   //Serial.println(now.second());
@@ -177,6 +237,8 @@ void setup() {
   pinMode(solveButton,OUTPUT);
   pinMode(resetButton,OUTPUT);
   pinMode(beeper,OUTPUT);
+  lcdDisplay.setCursor(0,1);
+  lcdDisplay.print("Boot Complete");
 }
 void loop() {
   if (Serial.available()) processCommands();
