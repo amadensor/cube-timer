@@ -252,6 +252,8 @@ void loop() {
     {
       lcdDisplay.clear();
       lcdDisplay.setCursor(0,2);
+      allOff();
+      digitalWrite(inspectLED,HIGH);
       lcdDisplay.print(modes[mode]);
     }
     inspectStart=millis();
