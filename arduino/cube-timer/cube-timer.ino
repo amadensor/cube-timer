@@ -19,6 +19,8 @@ int dateYear,dateMonth,dateDay,timeHour,timeMinute,timeSecond;
 int inChar;
 int mode=4; //start at done
 DateTime now;
+File scoreFile;
+String fileData,filePath;
 
 DS1307 rtc;
 
@@ -59,8 +61,6 @@ void saveResults(){
   //write SD
   //Write serial
   float inspectTime, solveTime;
-  String fileData,filePath;
-  File scoreFile;
   inspectTime=(solveStart-inspectStart)/1000.0;
   solveTime=(solveFinish-solveStart)/1000.0;
   lcdDisplay.clear();
@@ -72,24 +72,6 @@ void saveResults(){
   lcdDisplay.print(solveTime);
   if (validSD==1)
   {
-    filePath="";
-    filePath.concat(now.year());
-    filePath.concat("/");
-    filePath.concat(now.month());
-    filePath.concat("/");
-    filePath.concat(now.day());
-    filePath.concat("/");
-    filePath.concat(now.hour());
-    filePath.concat("/");
-    filePath.concat(now.minute());
-    filePath.concat("/");
-    filePath.concat(now.second());
-    filePath.concat("/");
-    SD.mkdir(filePath);
-    filePath.concat("scores.csv");
-    scoreFile=SD.open(filePath,FILE_WRITE);
-    fileData="Inspect Time, Solve Time, Inspect Start, Solve Start, Solve Finish";
-    scoreFile.println(fileData);
     fileData="";
     fileData.concat(inspectTime);
     fileData.concat(",");
@@ -217,6 +199,24 @@ void setup() {
     lcdDisplay.setCursor(0,0);
     lcdDisplay.print("SD Card OK");
     validSD=1;
+    filePath="";
+    filePath.concat(now.year());
+    filePath.concat("/");
+    filePath.concat(now.month());
+    filePath.concat("/");
+    filePath.concat(now.day());
+    filePath.concat("/");
+    filePath.concat(now.hour());
+    filePath.concat("/");
+    filePath.concat(now.minute());
+    filePath.concat("/");
+    filePath.concat(now.second());
+    filePath.concat("/");
+    SD.mkdir(filePath);
+    filePath.concat("scores.csv");
+    scoreFile=SD.open(filePath,FILE_WRITE);
+    fileData="Inspect Time, Solve Time, Inspect Start, Solve Start, Solve Finish";
+    scoreFile.println(fileData);
   }
   else
   {
