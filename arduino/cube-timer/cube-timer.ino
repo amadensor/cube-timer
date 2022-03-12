@@ -1,4 +1,4 @@
-#include <SPI.h>
+//#include <SPI.h>
 #include <SD.h>
 #include <LCD_I2C.h>
 //#include <Wire.h>
@@ -14,7 +14,6 @@ int validSD=0;
 unsigned long inspectLimit=15000;
 unsigned long inspectStart,solveStart,solveFinish;
 unsigned long beepTimer, alertOne=8000, alertTwo=12000;
-String modes[5]={"Ready","Inspection","Hands Down","Solving","Complete"};
 int dateYear,dateMonth,dateDay,timeHour,timeMinute,timeSecond;
 int inChar;
 int mode=4; //start at done
@@ -38,23 +37,28 @@ void displaySolveTime(){
   lcdDisplay.print(solveTime);
 }
 
+String formatTime(DateTime dttm){
+  String dttmStr="";
+  dttmStr.concat(now.hour());
+  dttmStr.concat(":");
+  if (now.minute() < 10) dttmStr.concat("0");
+  dttmStr.concat(now.minute());
+  dttmStr.concat(":");
+  if (now.second() < 10) dttmStr.concat("0");
+  dttmStr.concat(now.second());
+  dttmStr.concat(" ");
+  dttmStr.concat(now.month());
+  dttmStr.concat("/");
+  dttmStr.concat(now.day());
+  dttmStr.concat("/");
+  dttmStr.concat(now.year());
+  return dttmStr;
+}
+
 void displayCurrentTime(){
-  String timeStamp="";
   now=rtc.now();
-  timeStamp.concat(now.hour());
-  timeStamp.concat(":");
-  timeStamp.concat(now.minute());
-  timeStamp.concat(":");
-  timeStamp.concat(now.second());
-  timeStamp.concat(" ");
-  timeStamp.concat(now.month());
-  timeStamp.concat("/");
-  timeStamp.concat(now.day());
-  timeStamp.concat("/");
-  timeStamp.concat(now.year());
- 
   lcdDisplay.setCursor(0,1);
-  lcdDisplay.print(timeStamp);
+  lcdDisplay.print(formatTime(now));
 }
 
 void saveResults(){
@@ -73,6 +77,8 @@ void saveResults(){
   if (validSD==1)
   {
     fileData="";
+    fileData.concat(formatTime(rtc.now()));
+    fileData.concat(",");
     fileData.concat(inspectTime);
     fileData.concat(",");
     fileData.concat(solveTime);
@@ -83,7 +89,7 @@ void saveResults(){
     fileData.concat(",");
     fileData.concat(solveFinish);
     scoreFile.println(fileData);
-    scoreFile.close();
+    scoreFile.flush();
   }
 }
 
@@ -194,6 +200,7 @@ void setup() {
     inChar=verFile.read();
     fileData.concat(char(inChar));
   }
+  verFile.close();
   if(fileData == "cubetimer\n")
   {
     lcdDisplay.setCursor(0,0);
@@ -215,8 +222,9 @@ void setup() {
     SD.mkdir(filePath);
     filePath.concat("scores.csv");
     scoreFile=SD.open(filePath,FILE_WRITE);
-    fileData="Inspect Time, Solve Time, Inspect Start, Solve Start, Solve Finish";
+    fileData="Time Stamp,Inspect Time, Solve Time, Inspect Start, Solve Start, Solve Finish";
     scoreFile.println(fileData);
+    scoreFile.flush();
   }
   else
   {
@@ -241,6 +249,7 @@ void setup() {
   lcdDisplay.print("Boot Complete");
 }
 void loop() {
+  String modes[5]={"Ready","Inspection","Hands Down","Solving","Complete"};
   if (Serial.available()) processCommands();
   if (mode==0 and analogRead(coverDetect)>coverThreshold){
     mode++;
