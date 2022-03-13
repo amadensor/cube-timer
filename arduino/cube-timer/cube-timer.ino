@@ -147,6 +147,8 @@ void processCommands(){
   if (cmd=="alert1") alertOne=val.toInt()*1000.0;
   if (cmd=="alert2") alertTwo=val.toInt()*1000.0;
   if (cmd=="inspect") inspectLimit=val.toInt()*1000.0;
+  if (cmd=="cutoff") cutOff=val.toInt()*1000.0;
+  if (cmd=="fail") inspectFail=val.toInt()*1000.0;
   if (cmd=="rs")
   {
     send_scores();

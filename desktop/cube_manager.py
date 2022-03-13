@@ -19,12 +19,16 @@ def get_ports():
     return port_ret
 
 normal_titles=[
-    [sg.Text("inspection time")],
-    [sg.Text("alert 1")],
-    [sg.Text("alert 2")],
+    [sg.Text("Cutoff")],
+    [sg.Text("Inspection Time")],
+    [sg.Text("Inspection Limit")],
+    [sg.Text("Alert 1")],
+    [sg.Text("Alert 2")],
 ]
 normal_inputs=[
+    [sg.Input(key='normal_cutoff',size=4,default_text="600")],
     [sg.Input(key='normal_inspect',size=4,default_text="15")],
+    [sg.Input(key='normal_limit',size=4,default_text="17")],
     [sg.Input(key='normal_1',size=4,default_text="8")],
     [sg.Input(key='normal_2',size=4,default_text="12")],
 ]
@@ -40,12 +44,16 @@ normal_col=[
 ]
 
 blindfolded_titles=[
-    [sg.Text("inspection time - 0")],
-    [sg.Text("alert 1")],
-    [sg.Text("alert 2")]
+    [sg.Text("Cutoff")],
+    [sg.Text("Inspection Time - 0")],
+    [sg.Text("Inspection Timit - 0")],
+    [sg.Text("Alert 1")],
+    [sg.Text("Alert 2")]
 ]
 blindfold_inputs=[
+    [sg.Input(key='blind_cutoff',size=4,default_text="0")],
     [sg.Input(key='blind_inspect',size=4,default_text="0")],
+    [sg.Input(key='blind_limit',size=4,default_text="0")],
     [sg.Input(key='blind_1',size=4,default_text="0")],
     [sg.Input(key='blind_2',size=4,default_text="0")],
 ]
@@ -147,7 +155,9 @@ def setup_normal(values):
     print("Normal")
     cmd={}
     cmd['mode']='normal'
+    cmd['cutoff']=values['normal_cutoff']
     cmd['inspect']=values['normal_inspect']
+    cmd['fail']=values['normal_limit']
     cmd['alert1']=values['normal_1']
     cmd['alert2']=values['normal_2']
     send_command(cmd)
@@ -156,7 +166,9 @@ def set_blind(values):
     """Setup Blind"""
     cmd={}
     cmd['mode']='blind'
+    cmd['cutoff']=values['blind_cutoff']
     cmd['inspect']=values['blind_inspect']
+    cmd['fail']=values['blind_limit']
     cmd['alert1']=values['blind_1']
     cmd['alert2']=values['blind_2']
     send_command(cmd)
