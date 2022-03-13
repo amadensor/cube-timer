@@ -18,4 +18,4 @@ pcd:
 Work in progress PCB layouts.
 
 SD Card Note:
-In order for the SD card to be considered valid, it must have a fiel on it containing the configuration you want to run with, this a a CSV file named CONF.TXT with the content Inspection Limit, First Alert, and Second Alert (15,8,12).  For events with no inspection time use 0,0,0.
+In order for the SD card to be considered valid, it must have a fiel on it containing the configuration you want to run with, this a a CSV file named CONF.TXT with the content Cut Off, ,Inspection Penalty, Inspection DNF, First Alert, and Second Alert (600,15,17,8,12).  For events with no inspection time use 600,0,0,0,0.

@@ -11,7 +11,7 @@ int beeper=9; //beeper on PWW
 int coverDetect=1;
 int coverThreshold=300;
 int validSD=0;
-unsigned long inspectLimit=15000;
+unsigned long inspectLimit=15000,inspectFail=17000,cutOff=600000;
 unsigned long inspectStart,solveStart,solveFinish;
 unsigned long beepTimer, alertOne=8000, alertTwo=12000;
 int dateYear,dateMonth,dateDay,timeHour,timeMinute,timeSecond;
@@ -29,13 +29,34 @@ void displayInspectTime(){
   lcdDisplay.setCursor(0,0);
   inspectTime=(millis()-inspectStart)/1000.0;
   lcdDisplay.print(inspectTime);
-}
+  if (inspectLimit>0 && (inspectTime)>(inspectLimit/1000)){
+    penalty="T";
+  }
+  if (inspectTime>(inspectFail/1000)) {
+    solveStart=millis();
+    solveFinish=millis();
+    failSolve();
+  }
+ }
 
+void failSolve(){
+    allOff();
+    mode=4;
+    penalty="DNF";
+    saveResults();
+    lcdDisplay.clear();
+    lcdDisplay.setCursor(0,0);
+    lcdDisplay.print("DNF");
+}
 void displaySolveTime(){
   float solveTime;
   lcdDisplay.setCursor(0,0);
   solveTime=(millis()-solveStart)/1000.0;
-  lcdDisplay.print(solveTime);
+  if (solveTime>(cutOff/1000)) {
+    solveFinish=millis();
+    failSolve();
+  }
+  else lcdDisplay.print(solveTime);
 }
 
 String formatTime(DateTime dttm){
@@ -66,11 +87,7 @@ void saveResults(){
   //write SD
   //Write serial
   float inspectTime, solveTime;
-  penalty="F";
   inspectTime=(solveStart-inspectStart)/1000.0;
-  if (inspectLimit>0 && (solveStart-inspectStart)>inspectLimit){
-    penalty="T";
-  }
   solveTime=(solveFinish-solveStart)/1000.0;
   lcdDisplay.clear();
   lcdDisplay.setCursor(0,0);
@@ -215,7 +232,7 @@ void setup() {
     }
     confFile.close();
     int n=0;
-    String confStrings[5];
+    String confStrings[6];
     for (int t=0;t<=fileData.length();t++){
       if (fileData.charAt(t)==','){
         n++;
@@ -224,9 +241,11 @@ void setup() {
         confStrings[n].concat(fileData.charAt(t));
       }
     }
-    inspectLimit=(confStrings[0].toInt())*1000;
-    alertOne=(confStrings[1].toInt())*1000;
-    alertTwo=(confStrings[2].toInt())*1000;
+    cutOff=(confStrings[0].toInt())*1000;
+    inspectLimit=(confStrings[1].toInt())*1000;
+    inspectFail=(confStrings[2].toInt())*1000;
+    alertOne=(confStrings[3].toInt())*1000;
+    alertTwo=(confStrings[4].toInt())*1000;
     lcdDisplay.setCursor(0,0);
     lcdDisplay.print("SD Card OK");
     validSD=1;
@@ -272,7 +291,7 @@ void setup() {
   lcdDisplay.print("Boot Complete");
 }
 void loop() {
-  String modes[5]={"Ready","Inspection","Hands Down","Solving","Complete"};
+  String modes[6]={"Ready","Inspection","Hands Down","Solving","Complete","DNF"};
   if (Serial.available()) processCommands();
   if (mode==0 and analogRead(coverDetect)>coverThreshold){
     mode++;
@@ -321,12 +340,13 @@ void loop() {
       digitalWrite(doneLED,HIGH);
     }
     else{
-      if (penalty=="T") digitalWrite(doneLED,LOW);
+      if (penalty != "F") digitalWrite(doneLED,LOW);
     }
   }
   if (mode==4 and analogRead(coverDetect)<coverThreshold and digitalRead(resetButton)==HIGH){
     mode=0;
     allOff();
+    penalty="F";
     digitalWrite(readyLED,HIGH);
     lcdDisplay.setCursor(0,2);
     lcdDisplay.print(modes[mode]);
