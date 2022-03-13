@@ -20,6 +20,7 @@ int mode=4; //start at done
 DateTime now;
 File scoreFile;
 String fileData,filePath;
+String penalty="F";
 
 DS1307 rtc;
 
@@ -65,7 +66,11 @@ void saveResults(){
   //write SD
   //Write serial
   float inspectTime, solveTime;
+  penalty="F";
   inspectTime=(solveStart-inspectStart)/1000.0;
+  if (inspectLimit>0 && (solveStart-inspectStart)>inspectLimit){
+    penalty="T";
+  }
   solveTime=(solveFinish-solveStart)/1000.0;
   lcdDisplay.clear();
   lcdDisplay.setCursor(0,0);
@@ -74,6 +79,10 @@ void saveResults(){
   lcdDisplay.setCursor(0,1);
   lcdDisplay.print("Solve: ");
   lcdDisplay.print(solveTime);
+  if (penalty=="T"){
+    lcdDisplay.setCursor(15,1);
+    lcdDisplay.print("+");
+  }
   if (validSD==1)
   {
     fileData="";
@@ -82,6 +91,8 @@ void saveResults(){
     fileData.concat(inspectTime);
     fileData.concat(",");
     fileData.concat(solveTime);
+    fileData.concat(",");
+    fileData.concat(penalty);
     fileData.concat(",");
     fileData.concat(inspectStart);
     fileData.concat(",");
@@ -172,7 +183,7 @@ void setClock(String inString){
 
 void setup() {
   String fileData;
-  File verFile;
+  File confFile;
 
 #ifdef AVR
   //Wire.begin();
@@ -193,16 +204,29 @@ void setup() {
     rtc.adjust(DateTime(__DATE__, __TIME__));
   }
   SD.begin();
-  verFile=SD.open("VERIFY.TXT");
-  fileData="";
-  while (verFile.available())
+  if(SD.exists("CONF.TXT"))
   {
-    inChar=verFile.read();
-    fileData.concat(char(inChar));
-  }
-  verFile.close();
-  if(fileData == "cubetimer\n")
-  {
+    confFile=SD.open("CONF.TXT");
+    fileData="";
+    while (confFile.available())
+    {
+      inChar=confFile.read();
+      fileData.concat(char(inChar));
+    }
+    confFile.close();
+    int n=0;
+    String confStrings[5];
+    for (int t=0;t<=fileData.length();t++){
+      if (fileData.charAt(t)==','){
+        n++;
+      }
+      else{
+        confStrings[n].concat(fileData.charAt(t));
+      }
+    }
+    inspectLimit=(confStrings[0].toInt())*1000;
+    alertOne=(confStrings[1].toInt())*1000;
+    alertTwo=(confStrings[2].toInt())*1000;
     lcdDisplay.setCursor(0,0);
     lcdDisplay.print("SD Card OK");
     validSD=1;
@@ -222,7 +246,7 @@ void setup() {
     SD.mkdir(filePath);
     filePath.concat("scores.csv");
     scoreFile=SD.open(filePath,FILE_WRITE);
-    fileData="Time Stamp,Inspect Time, Solve Time, Inspect Start, Solve Start, Solve Finish";
+    fileData="Time Stamp,Inspect Time, Solve Time,Penalty, Inspect Start, Solve Start, Solve Finish";
     scoreFile.println(fileData);
     scoreFile.flush();
   }
@@ -231,7 +255,6 @@ void setup() {
     lcdDisplay.setCursor(0,0);
     lcdDisplay.print("No valid SD");
   }
-  verFile.close();
   //Serial.println(now.hour());
   //Serial.println(now.minute());
   //Serial.println(now.second());
@@ -292,6 +315,15 @@ void loop() {
     lcdDisplay.print(modes[mode]);
     saveResults();    
   }
+  if (mode==4){
+    unsigned long blinkTime=(millis()/1000);
+    if ((blinkTime/2.00)==int(blinkTime/2.00)){
+      digitalWrite(doneLED,HIGH);
+    }
+    else{
+      if (penalty=="T") digitalWrite(doneLED,LOW);
+    }
+  }
   if (mode==4 and analogRead(coverDetect)<coverThreshold and digitalRead(resetButton)==HIGH){
     mode=0;
     allOff();
@@ -306,7 +338,9 @@ void loop() {
     displayInspectTime();
     beepTimer=millis()- inspectStart;
     if ((alertOne < beepTimer) && (beepTimer < alertOne + 200)
-     || (alertTwo < beepTimer) && (beepTimer < alertTwo + 200)){
+     || (alertTwo < beepTimer) && (beepTimer < alertTwo + 200)
+     || (inspectLimit < beepTimer) && (beepTimer < inspectLimit + 200)
+     ){
       digitalWrite(beeper,HIGH);
     }
     else {
