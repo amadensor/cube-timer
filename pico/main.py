@@ -3,6 +3,7 @@ import os
 import select
 import machine
 import time
+import json
 import ds1307
 from lcd_api import LcdApi
 from pico_i2c_lcd import I2cLcd
@@ -191,7 +192,7 @@ def processCommands():
     for t in range(0,len(inString)):
         if inString[t]==':':
             cmd=inString[:t]
-            cmd.trim()
+            cmd.strip()
             t+=1
             val=inString[t:].strip()
 
@@ -214,15 +215,11 @@ def processCommands():
 
 
 def send_scores():
-    scoreJSON=""
-    scoreJSON.concat("{\"Inspection Limit\":")
-    scoreJSON.concat(inspectLimit)
-    scoreJSON.concat(",\"Inspect Time\":")
-    scoreJSON.concat(solveStart-inspectStart)
-    scoreJSON.concat(",\"Solve Time\":")
-    scoreJSON.concat(solveFinish-solveStart)
-    scoreJSON.concat("}")
-    Serial.println(scoreJSON)
+    scoreJSON={
+        "Inspection Limit":inspectLimit,
+        "Inspect Time":solveStart-inspectStart,
+        "Solve Time":solveFinish-solveStart}
+    print (json.dumps(scoreJSON))
 
 def readSerial():
     retString=""
@@ -236,14 +233,14 @@ def readSerial():
 
 def setClock(inString):
     #Serial.println("Set Clock");
-    if inString.substring(0,1)==String('C'):
-        dateYear=inString.substring(1,5).toInt()
-        dateMonth=inString.substring(5,7).toInt()
-        dateDay=inString.substring(7,9).toInt()
-        timeHour=inString.substring(9,11).toInt()
-        timeMinute=inString.substring(11,13).toInt()
-        timeSecond=inString.substring(13,15).toInt()
-        rtc.datetime(dateYear,dateMonth, dateDay, timeHour, timeMinute, timeSecond,0,0)
+    if inString[0:1]=='C':
+        dateYear=int(inString[1:5])
+        dateMonth=int(inString[5:7])
+        dateDay=int(inString[7:9])
+        timeHour=int(inString[9:11])
+        timeMinute=int(inString[11:13])
+        timeSecond=int(inString[13:15])
+        rtc.datetime((dateYear,dateMonth, dateDay, timeHour, timeMinute, timeSecond,0,0))
         print(inString)
         print("Clock set")
         print(rtc.datetime())
