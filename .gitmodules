@@ -1,0 +1,3 @@
+[submodule "pico/RPI-PICO-I2C-LCD"]
+	path = pico/RPI-PICO-I2C-LCD
+	url = git@github.com:T-622/RPI-PICO-I2C-LCD.git
