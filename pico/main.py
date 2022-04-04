@@ -55,6 +55,28 @@ rtc=ds1307.DS1307(i2c)
 
 lcdDisplay=I2cLcd(i2c,lcd_addr,4,20)
 
+filePath=(
+    str(rtc.datetime()[0])+
+    "/"+
+    str(rtc.datetime()[1])+
+    "/"+
+    str(rtc.datetime()[2])+
+    "/"+
+    str(rtc.datetime()[3])+
+    "/"+
+    str(rtc.datetime()[4])+
+    "/"+
+    str(rtc.datetime()[5])+
+    "/"+
+    "scores.csv"
+)
+filePath="scores.csv"
+scoreFile=open(filePath,"w")
+fileData="Time Stamp,Inspect Time, Solve Time,Penalty, Inspect Start, Solve Start, Solve Finish\n"
+scoreFile.write(fileData)
+
+
+
 
 def displayInspectTime():
     global solveStart,solveFinish
@@ -68,7 +90,6 @@ def displayInspectTime():
         print(inspectTime,inspectFail)
         solveStart=time.ticks_ms()
         solveFinish=time.ticks_ms()
-        raise Exception("fail")
         failSolve()
 
 def failSolve():
@@ -149,7 +170,8 @@ def saveResults():
         ","+
         str(solveStart)+
         ","+
-        str(solveFinish)
+        str(solveFinish)+
+        "\n"
         )
     scoreFile.write(fileData)
 
@@ -160,17 +182,18 @@ def allOff():
     doneLED.off()
 
 def processCommands():
+    print("Commands")
     inString=""
-    cmd,val=""
+    cmd=""
+    val=""
     inString=readSerial()
 
     for t in range(0,len(inString)):
-        if inString.charAt(t)==':':
-            cmd=inString.substring(0,t)
+        if inString[t]==':':
+            cmd=inString[:t]
             cmd.trim()
             t+=1
-            val=inString.substring(t,inString.length())
-            val.trim()
+            val=inString[t:].strip()
 
     #Serial.println(cmd);
     #Serial.println(val);
@@ -202,12 +225,12 @@ def send_scores():
     Serial.println(scoreJSON)
 
 def readSerial():
-    inChar=""
     retString=""
     time.sleep_ms(500)
-    while Serial.available():
-        inChar=Serial.read()
-        retString.concat(char(inChar))
+    
+    for line in sys.stdin.readline().strip():
+        retString=retString+line
+    print("read",retString)
     return retString
 
 
@@ -221,7 +244,9 @@ def setClock(inString):
         timeMinute=inString.substring(11,13).toInt()
         timeSecond=inString.substring(13,15).toInt()
         rtc.datetime(dateYear,dateMonth, dateDay, timeHour, timeMinute, timeSecond,0,0)
-        #Serial.println("Clock set");
+        print(inString)
+        print("Clock set")
+        print(rtc.datetime())
 
 def setup():
     global scoreFile
@@ -253,25 +278,6 @@ def setup():
         inspectFail=(confStrings[2].toInt())*1000
         alertOne=(confStrings[3].toInt())*1000
         alertTwo=(confStrings[4].toInt())*1000
-        lcdDisplay.move_to(0,0)
-        lcdDisplay.putstr("SD Card OK")
-        filePath=""
-        filePath.rtc.datetime()[0]
-        filePath.concat("/")
-        filePath.rtc.datetime()[1]
-        filePath.concat("/")
-        filePath.rtc.datetime()[2]
-        filePath.concat("/")
-        filePath.rtc.datetime()[3]
-        filePath.concat("/")
-        filePath.rtc.datetime()[4]
-        filePath.concat("/")
-        filePath.rtc.datetime()[5]
-        filePath.concat("/")
-        filePath.concat("scores.csv")
-        scoreFile=open(filePath,"w")
-        fileData="Time Stamp,Inspect Time, Solve Time,Penalty, Inspect Start, Solve Start, Solve Finish"
-        print(fileData)
     #print(now.hour())
     #print(now.minute())
     #print(now.second())
