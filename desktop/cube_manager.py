@@ -148,8 +148,18 @@ def main():
 
 def read_sd(values):
     """Read scores from SD card"""
-    print("read sd")
     del values
+    cmd={'sd':''}
+    score_bytes=send_command(cmd)
+    score_list=[]
+    for score_byte in score_bytes:
+        score_str=score_byte.decode()
+        #score_dict=json.loads(score_str)
+        #score_list.append(score_dict.decode())
+        score_list.append(score_str)
+    print(json.dumps(score_list,indent=4))
+    return score_list
+
 def setup_normal(values):
     """Set up normal timer"""
     print("Normal")

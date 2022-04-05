@@ -18,7 +18,10 @@ doneLEDnum=15
 
 solveButtonnum=17
 resetButtonnum=18
-beepernum=0 #beeper on PWW
+beepernum=20 #beeper on PWW
+beeper=machine.PWM(machine.Pin(20))
+beeper.freq(1500)
+
 coverDetect=machine.ADC(26)
 
 readyLED=machine.Pin(readyLEDnum,machine.Pin.OUT)
@@ -56,7 +59,7 @@ rtc=ds1307.DS1307(i2c)
 
 lcdDisplay=I2cLcd(i2c,lcd_addr,4,20)
 
-filePath=(
+"""filePath=(
     str(rtc.datetime()[0])+
     "/"+
     str(rtc.datetime()[1])+
@@ -70,17 +73,19 @@ filePath=(
     str(rtc.datetime()[5])+
     "/"+
     "scores.csv"
-)
+)"""
+
 filePath="scores.csv"
-scoreFile=open(filePath,"w")
-fileData="Time Stamp,Inspect Time, Solve Time,Penalty, Inspect Start, Solve Start, Solve Finish\n"
-scoreFile.write(fileData)
-
-
-
+penalty
+try:
+    scoreFile=open(filePath,"a")
+except:
+    scoreFile=open(filePath,"w")
+    fileData="Time Stamp,Inspect Time, Solve Time,Penalty, Inspect Start, Solve Start, Solve Finish\n"
+    scoreFile.write(fileData)
 
 def displayInspectTime():
-    global solveStart,solveFinish
+    global solveStart, solveFinish, penalty
     inspectTime=0
     lcdDisplay.move_to(0,0)
     inspectTime=(time.ticks_ms()-inspectStart)/1000.0
@@ -116,15 +121,15 @@ def displaySolveTime():
 
 def formatTime(now):
     dttmStr=""
-    dttmStr=dttmStr+str(now[3])
-    dttmStr=dttmStr+(":")
-    if now[4] < 10:
-        dttmStr=dttmStr+("0")
     dttmStr=dttmStr+str(now[4])
     dttmStr=dttmStr+(":")
     if now[5] < 10:
-        dttmStr=dttmStr+"0"
+        dttmStr=dttmStr+("0")
     dttmStr=dttmStr+str(now[5])
+    dttmStr=dttmStr+(":")
+    if now[6] < 10:
+        dttmStr=dttmStr+"0"
+    dttmStr=dttmStr+str(now[6])
     dttmStr=dttmStr+(" ")
     dttmStr=dttmStr+str(now[1])
     dttmStr=dttmStr+("/")
@@ -175,6 +180,13 @@ def saveResults():
         "\n"
         )
     scoreFile.write(fileData)
+    scoreFile.flush()
+
+def send_sd():
+    """send sd content to """
+    sd=open("scores.csv")
+    for line in sd.readlines():
+        print(line)
 
 def allOff():
     readyLED.off()
@@ -210,6 +222,8 @@ def processCommands():
         inspectFail=val.toInt()*1000.0
     if cmd=="rs":
         send_scores()
+    if cmd=="sd":
+        send_sd()
     if cmd=="clock":
         setClock(val)
 
