@@ -80,13 +80,7 @@ countdown_col=[
 ]
 
 clock_set=[[
-    sg.Text("year"),sg.Input(key='year',size=4),
-    sg.Text("month"),sg.Input(key='month',size=4),
-    sg.Text("day"),sg.Input(key='day',size=4),
-    sg.Text("hour"),sg.Input(key='hour',size=4),
-    sg.Text("minute"),sg.Input(key='minute',size=4),
-    sg.Text("second"),sg.Input(key='second',size=4),
-    sg.Button("Set",key='clock_button')]
+    sg.Button("Set Clock",key='clock_button')]
 ]
 
 actions=[
@@ -199,16 +193,19 @@ def set_countdown(values):
 
 def set_clock(values):
     """"Set real time clock"""
+    del values
+    l_time=time.localtime()
     cmd={}
     cmd['clock']=(
         "C"+
-        values['year']+
-        values['month']+
-        values['day']+
-        values['hour']+
-        values['minute']+
-        values['second']
+        str(l_time.tm_year)+
+        ("00"+str(l_time.tm_mon))[-2:]+
+        ("00"+str(l_time.tm_mday))[-2:]+
+        ("00"+str(l_time.tm_hour))[-2:]+
+        ("00"+str(l_time.tm_min))[-2:]+
+        ("00"+str(l_time.tm_sec))[-2:]
     )
+    print(cmd)
     send_command(cmd)
 
 def read_scores(values):
@@ -225,7 +222,7 @@ def send_command(cmds):
     """Send command across serial"""
     for cmd in cmds:
         print("#",cmd)
-        serline=str(cmd+":"+cmds[cmd])
+        serline=str(cmd+":"+cmds[cmd]+"\n")
         ser.write(serline.encode('UTF-8'))
         time.sleep(1)
     ret_data=ser.readlines()

@@ -28,7 +28,7 @@ readyLED=machine.Pin(readyLEDnum,machine.Pin.OUT)
 inspectLED=machine.Pin(inspectLEDnum,machine.Pin.OUT)
 solveLED=machine.Pin(solveLEDnum,machine.Pin.OUT)
 doneLED=machine.Pin(doneLEDnum,machine.Pin.OUT)
-beeper=machine.Pin(beepernum,machine.Pin.OUT)
+
 
 solveButton=machine.Pin(solveButtonnum,machine.Pin.IN)
 resetButton=machine.Pin(resetButtonnum,machine.Pin.IN)
@@ -254,7 +254,7 @@ def setClock(inString):
         timeHour=int(inString[9:11])
         timeMinute=int(inString[11:13])
         timeSecond=int(inString[13:15])
-        rtc.datetime((dateYear,dateMonth, dateDay, timeHour, timeMinute, timeSecond,0,0))
+        rtc.datetime((dateYear,dateMonth, dateDay, 0, timeHour, timeMinute, timeSecond,0))
         print(inString)
         print("Clock set")
         print(rtc.datetime())
@@ -338,8 +338,8 @@ def main_loop():
         lcdDisplay.putstr(modes[modeNum])
         saveResults()
     if modeNum==4:
-        blinkTime=(time.ticks_ms()/1000)
-        if (blinkTime/2.00)==int(blinkTime/2.00 and penalty=="T"):
+        blinkTime=int(time.ticks_ms()/1000)
+        if (blinkTime/2.00)==int(blinkTime/2.00):
             doneLED.on()
         else:
             if (penalty != "F"):
@@ -361,9 +361,9 @@ def main_loop():
         or (alertTwo < beepTimer) and (beepTimer < alertTwo + 200)
         or (inspectLimit < beepTimer) and (beepTimer < inspectLimit + 200)
         ):
-            beeper.on()
+            beeper.duty_u16(20000)
         else:
-            beeper.off()
+            beeper.duty_u16(0)
     if (modeNum==3):
         displaySolveTime()
     if (modeNum==0):
