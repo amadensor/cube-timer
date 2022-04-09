@@ -78,6 +78,8 @@ lcdDisplay=I2cLcd(i2c,lcd_addr,4,20)
 filePath="scores.csv"
 penalty
 try:
+    tmpFile=open(filePath)
+    tmpFile.close()
     scoreFile=open(filePath,"a")
 except:
     scoreFile=open(filePath,"w")
@@ -186,7 +188,7 @@ def send_sd():
     """send sd content to """
     sd=open("scores.csv")
     for line in sd.readlines():
-        print(line)
+        print(line.strip())
 
 def allOff():
     readyLED.off()
@@ -221,19 +223,18 @@ def processCommands():
     if cmd=="fail":
         inspectFail=val.toInt()*1000.0
     if cmd=="rs":
-        send_scores()
+        reset_scores()
     if cmd=="sd":
         send_sd()
     if cmd=="clock":
         setClock(val)
 
 
-def send_scores():
-    scoreJSON={
-        "Inspection Limit":inspectLimit,
-        "Inspect Time":solveStart-inspectStart,
-        "Solve Time":solveFinish-solveStart}
-    print (json.dumps(scoreJSON))
+def reset_scores():
+    os.remove('scores.csv')
+    print("reset")
+    print("reset")
+    machine.reset()
 
 def readSerial():
     retString=""

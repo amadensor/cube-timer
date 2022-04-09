@@ -84,7 +84,8 @@ clock_set=[[
 ]
 
 actions=[
-    sg.Button("Get scores",key='scores'),
+    sg.Button("Reset scores",key='scores'),
+    sg.Button("Reboot timer",key='reboot'),
     sg.Button("Read scores from SD", key='sd_button'),
     sg.Button("Port", key='refresh_port'),
     sg.Combo([],key="port_select",enable_events=True,s=16),
@@ -117,7 +118,8 @@ def main():
             "cu_button":set_countup,
             "cd_button":set_countdown,
             'clock_button':set_clock,
-            'scores':read_scores,
+            'scores':reset_scores,
+            'reboot':reboot_timer,
             'sd_button':read_sd,
             'port_select':set_port,
             'refresh_port':refresh_port,
@@ -143,6 +145,17 @@ def main():
 def read_sd(values):
     """Read scores from SD card"""
     del values
+    file_picker=[
+        [sg.Text("Pick Target File"),sg.Input(),sg.FileSaveAs(key="-FILE-")],
+        [sg.Button("Process")]
+        ]
+    file_win=sg.Window('File Browse',file_picker)
+    file_event,file_values=file_win.read()
+    print(file_event)
+    print(file_values)
+    write_file=file_values[0]
+    file_win.close()
+    print(write_file)
     cmd={'sd':''}
     score_bytes=send_command(cmd)
     score_list=[]
@@ -152,6 +165,10 @@ def read_sd(values):
         #score_list.append(score_dict.decode())
         score_list.append(score_str)
     print(json.dumps(score_list,indent=4))
+    save_file=open(write_file,"w")
+    for line in score_list[2:]:
+        save_file.write(line)
+    save_file.close()
     return score_list
 
 def setup_normal(values):
@@ -208,15 +225,21 @@ def set_clock(values):
     print(cmd)
     send_command(cmd)
 
-def read_scores(values):
+def reset_scores(values):
     """"Read scores via serial"""
     del values
     cmd={'rs':''}
     score_bytes=send_command(cmd)
     score_str=score_bytes[0].decode()
-    score_dict=json.loads(score_str)
-    print(json.dumps(score_dict,indent=4))
-    return score_dict
+    print(score_str)
+    return score_str
+
+def reboot_timer(cmds):
+    """Send command across serial"""
+    serline=chr(3)+chr(3)+chr(3)+"machine.reset()"+chr(11)+chr(13)
+    ser.write(serline.encode('UTF-8'))
+    time.sleep(1)
+
 
 def send_command(cmds):
     """Send command across serial"""
@@ -225,16 +248,19 @@ def send_command(cmds):
         serline=str(cmd+":"+cmds[cmd]+"\n")
         ser.write(serline.encode('UTF-8'))
         time.sleep(1)
-    ret_data=ser.readlines()
-    print(ret_data)
+    try:
+        ret_data=ser.readlines()
+        print(ret_data)
+    except:
+        ret_data=["Nothing".encode("UTF-8")]
     return ret_data
 
 def refresh_port(values):
     """Refresh port selector"""
     port_list=get_ports()
     window['port_select'].update(values=port_list,value=port_list[0])
-    if not values.get('port_select'):
-        set_port({"port_select":port_list[0]})
+    #if not values.get('port_select'):
+    set_port({"port_select":port_list[0]})
     return port_list[0]
 
 
